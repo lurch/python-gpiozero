@@ -173,6 +173,16 @@ class DigitalOutputDevice(OutputDevice):
             self._blink_thread.join()
             self._blink_thread = None
 
+    def blink_sequence(self, sequence, n=None, background=True):
+        self._stop_blink()
+        self._blink_thread = GPIOThread(
+            target=self._blink_led_seq, args=(sequence, n)
+        )
+        self._blink_thread.start()
+        if not background:
+            self._blink_thread.join()
+            self._blink_thread = None
+
     def _stop_blink(self):
         if self._blink_thread:
             self._blink_thread.stop()
@@ -186,6 +196,22 @@ class DigitalOutputDevice(OutputDevice):
                 break
             self._write(False)
             if self._blink_thread.stopping.wait(off_time):
+                break
+
+    def _blink_led_seq(self, sequence, n):
+        iterable = repeat(sequence) if n is None else repeat(sequence, n)
+        for sequence in iterable:
+            terminated = False
+            for (on_time, off_time) in sequence:
+                self._write(True)
+                if self._blink_thread.stopping.wait(on_time):
+                    terminated = True
+                    break
+                self._write(False)
+                if self._blink_thread.stopping.wait(off_time):
+                    terminated = True
+                    break
+            if terminated:
                 break
 
 
