@@ -32,7 +32,7 @@ class LEDCollection(SourceMixin, CompositeDevice):
         initial_value = kwargs.get('initial_value', False)
         LEDClass = PWMLED if pwm else LED
         self._leds = tuple(
-            LEDClass(pin, active_high, initial_value) for pin in pins
+            LEDClass.construct_object(pin, active_high=active_high, initial_value=initial_value) for pin in pins
         )
 
     def close(self):
@@ -480,9 +480,9 @@ class TrafficLightsBuzzer(SourceMixin, CompositeDevice):
     def __init__(self, lights, buzzer, button):
         self._blink_thread = None
         super(TrafficLightsBuzzer, self).__init__()
-        self.lights = lights
-        self.buzzer = buzzer
-        self.button = button
+        self.lights = TrafficLights.construct_object(lights)
+        self.buzzer = Buzzer.construct_object(buzzer)
+        self.button = Button.construct_object(button)
         self._all = self.lights.leds + (self.buzzer,)
 
     def close(self):
@@ -707,8 +707,8 @@ class Robot(SourceMixin, CompositeDevice):
                 'left and right motor pins must be provided'
             )
         super(Robot, self).__init__()
-        self._left = Motor(*left)
-        self._right = Motor(*right)
+        self._left = Motor.construct_object(left)
+        self._right = Motor.construct_object(right)
 
     def close(self):
         self._left.close()

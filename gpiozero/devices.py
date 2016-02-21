@@ -10,7 +10,7 @@ str = type('')
 import atexit
 import weakref
 from threading import Thread, Event, RLock
-from collections import deque
+from collections import deque, Sequence
 from types import FunctionType
 try:
     from statistics import median, mean
@@ -116,6 +116,16 @@ class GPIOBase(GPIOMeta(nstr('GPIOBase'), (), {})):
 
     def __del__(self):
         self.close()
+
+    @classmethod
+    def construct_object(cls, value, **kwargs):
+        if isinstance(value, cls):
+            return value
+        else:
+            if isinstance(value, Sequence):
+                return cls(*value, **kwargs)
+            else:
+                return cls(value, **kwargs)
 
     def close(self):
         # This is a placeholder which is simply here to ensure close() can be
