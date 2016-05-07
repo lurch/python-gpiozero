@@ -778,10 +778,97 @@ class RGBLED(SourceMixin, Device):
                 break
 
 
-class Motor(SourceMixin, CompositeDevice):
+class UnidirectionalMotor(SourceMixin, CompositeDevice):
     """
     Extends :class:`CompositeDevice` and represents a generic motor
-    connected to a bi-directional motor driver circuit (i.e.  an `H-bridge`_).
+    connected to a unidirectional motor driver circuit (e.g. a ULN2003A chip).
+
+    Attach the ground of a ULN2003A chip to your Pi; connect a power source
+    (e.g. a battery pack or the 5V pin) to the chip; connect the motor between
+    one of the outputs of the chip and the positive supply from the power
+    source; connect the corresponding input of the chip to a GPIO pin.
+
+    The following code will make the motor turn "forwards" at full speed::
+
+        from gpiozero import UnidirectionalMotor
+
+        motor = UnidirectionalMotor(17)
+        motor.forward()
+
+    :param int forward:
+        The GPIO pin that the input of the motor driver chip is connected to.
+
+    :param bool pwm:
+        If ``True`` (the default), construct a :class:`PWMOutputDevice`
+        instance for the motor controller pin, allowing variable speed control. If ``False``,
+        construct a :class:`DigitalOutputDevice` instance, allowing only forward/stop control.
+    """
+    def __init__(self, forward=None, pwm=True, **kwargs):
+        if 'forward_device' not in kwargs:
+            if not forward:
+                raise GPIOPinMissing(
+                    'forward pin must be provided'
+                )
+            else:
+                PinClass = PWMOutputDevice if pwm else DigitalOutputDevice
+                kwargs['forward_device'] = PinClass(forward)
+        if '_order' not in kwargs:
+            kwargs['_order'] = ['forward_device']
+        super(UnidirectionalMotor, self).__init__(**kwargs)
+
+    @property
+    def value(self):
+        """
+        Represents the speed of the motor as a floating point value between 0
+        (stopped) and 1 (full speed forward).
+        """
+        return self.forward_device.value
+
+    @value.setter
+    def value(self, value):
+        if not 0 <= value <= 1:
+            raise OutputDeviceBadValue("UnidirectionalMotor value must be between 0 and 1")
+        if value > 0:
+            try:
+                self.forward(value)
+            except ValueError as e:
+                raise OutputDeviceBadValue(e)
+        else:
+            self.stop()
+
+    @property
+    def is_active(self):
+        """
+        Returns ``True`` if the motor is currently running and ``False``
+        otherwise.
+        """
+        return self.value != 0
+
+    def forward(self, speed=1):
+        """
+        Drive the motor forwards.
+
+        :param float speed:
+            The speed at which the motor should turn. Can be any value between
+            0 (stopped) and the default 1 (maximum speed) if ``pwm`` was
+            ``True`` when the class was constructed (and only 0 or 1 if not).
+        """
+        if isinstance(self.forward_device, DigitalOutputDevice):
+            if speed not in (0, 1):
+                raise ValueError('forward speed must be 0 or 1 with non-PWM Motors')
+        self.forward_device.value = speed
+
+    def stop(self):
+        """
+        Stop the motor.
+        """
+        self.forward_device.off()
+
+
+class Motor(UnidirectionalMotor):
+    """
+    Extends :class:`UnidirectionalMotor` and represents a generic motor
+    connected to a bi-directional motor driver circuit (i.e. an `H-bridge`_).
 
     Attach an `H-bridge`_ motor controller to your Pi; connect a power source
     (e.g. a battery pack or the 5V pin) to the controller; connect the outputs
@@ -821,6 +908,7 @@ class Motor(SourceMixin, CompositeDevice):
         super(Motor, self).__init__(
                 forward_device=PinClass(forward),
                 backward_device=PinClass(backward),
+                pwm=pwm,
                 _order=('forward_device', 'backward_device'))
 
     @property
@@ -905,3 +993,5 @@ class Motor(SourceMixin, CompositeDevice):
         """
         self.forward_device.off()
         self.backward_device.off()
+
+BidirectionalMotor = Motor

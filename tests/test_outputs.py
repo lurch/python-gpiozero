@@ -787,6 +787,88 @@ def test_rgbled_close_nonpwm():
         device.close()
         assert device.closed
 
+def test_unimotor_missing_pins():
+    with pytest.raises(ValueError):
+        UnidirectionalMotor()
+
+def test_unimotor_pins():
+    f = MockPWMPin(1)
+    with UnidirectionalMotor(f) as device:
+        assert device.forward_device.pin is f
+        assert isinstance(device.forward_device, PWMOutputDevice)
+
+def test_unimotor_pins_nonpwm():
+    f = MockPin(1)
+    with UnidirectionalMotor(f, pwm=False) as device:
+        assert device.forward_device.pin is f
+        assert isinstance(device.forward_device, DigitalOutputDevice)
+
+def test_unimotor_close():
+    f = MockPWMPin(1)
+    with UnidirectionalMotor(f) as device:
+        device.close()
+        assert device.closed
+        assert device.forward_device.pin is None
+        device.close()
+        assert device.closed
+
+def test_unimotor_close_nonpwm():
+    f = MockPin(1)
+    with UnidirectionalMotor(f, pwm=False) as device:
+        device.close()
+        assert device.closed
+        assert device.forward_device.pin is None
+        device.close()
+        assert device.closed
+
+def test_unimotor_value():
+    f = MockPWMPin(1)
+    with UnidirectionalMotor(f) as device:
+        device.value = 1
+        assert device.is_active
+        assert device.value == 1
+        assert f.state == 1
+        device.value = 0.5
+        assert device.is_active
+        assert device.value == 0.5
+        assert f.state == 0.5
+        device.value = 0
+        assert not device.is_active
+        assert not device.value
+        assert f.state == 0
+
+def test_unimotor_value_nonpwm():
+    f = MockPin(1)
+    with UnidirectionalMotor(f, pwm=False) as device:
+        device.value = 1
+        assert device.is_active
+        assert device.value == 1
+        assert f.state == 1
+        device.value = 0
+        assert not device.is_active
+        assert not device.value
+        assert f.state == 0
+
+def test_unimotor_bad_value():
+    f = MockPWMPin(1)
+    with UnidirectionalMotor(f) as device:
+        with pytest.raises(ValueError):
+            device.value = -1
+        with pytest.raises(ValueError):
+            device.value = 2
+
+def test_unimotor_bad_value_nonpwm():
+    f = MockPin(1)
+    with UnidirectionalMotor(f, pwm=False) as device:
+        with pytest.raises(ValueError):
+            device.value = -1
+        with pytest.raises(ValueError):
+            device.value = 2
+        with pytest.raises(ValueError):
+            device.value = -0.5
+        with pytest.raises(ValueError):
+            device.value = 0.5
+
 def test_motor_missing_pins():
     with pytest.raises(ValueError):
         Motor()
@@ -828,6 +910,8 @@ def test_motor_close_nonpwm():
         assert device.closed
         assert device.forward_device.pin is None
         assert device.backward_device.pin is None
+        device.close()
+        assert device.closed
 
 def test_motor_value():
     f = MockPWMPin(1)

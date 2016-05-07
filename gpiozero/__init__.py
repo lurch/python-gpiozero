@@ -98,6 +98,8 @@ from .output_devices import (
     PWMLED,
     LED,
     Buzzer,
+    UnidirectionalMotor,
+    BidirectionalMotor,
     Motor,
     RGBLED,
 )

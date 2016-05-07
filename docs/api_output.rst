@@ -37,11 +37,17 @@ Buzzer
 .. autoclass:: Buzzer(pin, active_high=True, initial_value=False)
     :members: on, off, toggle, beep, pin, is_active
 
+UnidirectionalMotor
+=====
+
+.. autoclass:: UnidirectionalMotor(forward, pwm=True)
+    :members: forward, stop, value
+
 Motor
 =====
 
 .. autoclass:: Motor(forward, backward, pwm=True)
-    :members: forward, backward, stop
+    :members: forward, backward, reverse, stop, value
 
 Base Classes
 ============

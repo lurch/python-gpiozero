@@ -19,4 +19,6 @@ digraph classes {
     Robot->Motor;
     Motor->DigitalOutputDevice;
     Motor->PWMOutputDevice;
+    UnidirectionalMotor->DigitalOutputDevice;
+    UnidirectionalMotor->PWMOutputDevice;
 }

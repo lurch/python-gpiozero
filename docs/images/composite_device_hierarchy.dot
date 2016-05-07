@@ -31,6 +31,7 @@ digraph classes {
     Robot->CompositeDevice;
     RyanteckRobot->Robot;
     CamJamKitRobot->Robot;
-    Motor->CompositeDevice;
+    UnidirectionalMotor->CompositeDevice;
+    Motor->UnidirectionalMotor;
     Energenie->Device;
 }
